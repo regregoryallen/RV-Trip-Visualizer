@@ -45,5 +45,9 @@ if [ ! -x "$APPIMAGETOOL" ]; then
   chmod +x "$APPIMAGETOOL"
 fi
 
-ARCH=x86_64 "$APPIMAGETOOL" "$APPDIR" "$OUT"
+# --appimage-extract-and-run avoids needing libfuse2 to mount appimagetool
+# itself - CI runners (ubuntu-latest, since Ubuntu 22.04) don't ship it by
+# default, and requiring it on every build/dev machine isn't worth it just
+# to invoke the tool.
+ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run "$APPDIR" "$OUT"
 echo "Wrote $OUT"
