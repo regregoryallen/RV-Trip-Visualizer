@@ -12,11 +12,32 @@ from datetime import date
 
 from . import geocode
 
-STATES = set(
+US_STATES = set(
     "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN "
     "MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA "
     "WA WV WI WY DC".split()
 )
+
+# Two-letter, no overlap with US_STATES.
+CA_PROVINCES = set("AB BC MB NB NL NS NT NU ON PE QC SK YT".split())
+
+# Standard three-letter INEGI/postal abbreviations - distinct length from
+# the two-letter US/Canada codes, so no collision risk even though some
+# letter pairs coincide (e.g. nothing here starts the same as a US code in
+# a way the regexes below could confuse, since they match the full token).
+MX_STATES = set(
+    "AGU BCN BCS CAM CHP CHH CMX COA COL DUR GUA GRO HID JAL MEX MIC MOR "
+    "NAY NLE OAX PUE QUE ROO SLP SIN SON TAB TAM TLA VER YUC ZAC".split()
+)
+
+# The set extract_city_state() matches text against. Deliberately a combined,
+# public, standard list (US states + Canadian provinces + Mexican states) -
+# not a hardcoded fix for any one venue. geocode.py's coordinate fallback
+# stays US-only (no bundled MX/CA boundary polygons), so this text-matching
+# path is the only way those resolve - which also means the actual fix for
+# the Puerto Peñasco case was recognizing data already present in the
+# Location text ("...SON, 83552"), not editing it.
+STATES = US_STATES | CA_PROVINCES | MX_STATES
 
 
 def resolve_overlaps(parsed_files) -> tuple[list, list]:
@@ -101,18 +122,19 @@ def extract_city_state(stop_name: str, location: str) -> tuple[str | None, str |
     """Pull a 'City, ST' pair out of free-text Location/Stop Name. Pure text
     parsing - if neither field contains a recognizable pair, returns
     (None, None) rather than guessing; the caller treats that as something
-    the user needs to fix in the source planner.
+    the user needs to fix in the source planner. {2,3} covers both two-letter
+    US/Canada codes and three-letter Mexican state codes (STATES above).
     """
     for src in (location, stop_name):
         src = (src or "").strip()
-        m = re.match(r"^([A-Za-z][A-Za-z.'\- ]*?),\s*([A-Z]{2})(?:\s*\(.*\))?$", src)
+        m = re.match(r"^([A-Za-z][A-Za-z.'\- ]*?),\s*([A-Z]{2,3})(?:\s*\(.*\))?$", src)
         if m and m.group(2) in STATES:
             return m.group(1).strip(), m.group(2)
     for src in (location, stop_name):
         parts = [p.strip() for p in (src or "").split(",")]
         for i in range(len(parts) - 1):
             city, statetok = parts[i], parts[i + 1]
-            msm = re.match(r"^([A-Z]{2})\b", statetok)
+            msm = re.match(r"^([A-Z]{2,3})\b", statetok)
             if msm and msm.group(1) in STATES and city and not re.search(r"\d", city) and len(city.split()) <= 4:
                 return city, msm.group(1)
     loc = (location or "").strip()

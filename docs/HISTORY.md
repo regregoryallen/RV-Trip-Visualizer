@@ -87,11 +87,23 @@ one state, which is a derived geometric fact, not a guess, the same
 category as the date-inference and mileage-rescue logic above. City has no
 equivalent fallback (the nearest named place to a rural RV park often isn't
 what anyone would call that stop), so it falls back to the stop's own raw
-Location/Stop Name text instead of being invented. The integrity check
-still blocks when coordinates are missing entirely, or fall outside every
-state this tool knows about (international stops - a Sonora, Mexico stop in
-the project's own real data is the one case this currently still flags,
-since only US state boundaries are bundled).
+Location/Stop Name text instead of being invented.
+
+`merge.STATES` also covers Canadian provinces (two-letter, no collision
+with US codes) and Mexican states (three-letter postal/INEGI codes - e.g.
+`SON` for Sonora) for the same reason: this is a standard, public code list,
+not a fix aimed at any one venue. It's text-matching only - `geocode.py`'s
+coordinate fallback stays US-only, since no MX/CA boundary polygons are
+bundled - but that was enough to resolve the project's own real Sonora,
+Mexico stop (`'...Puerto Peñasco (Rocky Point), SON, 83552'`) without
+editing a single character of the source data: the state code was already
+sitting right there in the Location text once the matcher recognized it.
+"States / regions" stats (`itinerary_page.py`, `map_shell.html`) count
+whatever's in each stay's `state` field, so Canadian/Mexican region codes
+count toward those totals the same as US states do - no separate logic
+needed there. The integrity check still blocks when coordinates are missing
+entirely, or a stop is genuinely outside every region this tool knows about
+(e.g. overseas travel).
 
 **The same correction applies generally**: a check should only ever block
 when there's something the user can actually go fix. The Miles-vs-Total

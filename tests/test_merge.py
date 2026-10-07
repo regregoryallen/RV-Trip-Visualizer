@@ -27,6 +27,25 @@ def test_extract_city_state_unresolvable_returns_none():
     assert merge.extract_city_state("Golden Eagle RV Park", "Golden Eagle RV Park") == (None, None)
 
 
+def test_extract_city_state_recognizes_canadian_province():
+    assert merge.extract_city_state("", "Banff, AB") == ("Banff", "AB")
+
+
+def test_extract_city_state_recognizes_mexican_state_three_letter_code():
+    assert merge.extract_city_state("", "Guadalajara, JAL") == ("Guadalajara", "JAL")
+
+
+def test_extract_city_state_recognizes_mexican_state_embedded_in_longer_text():
+    # The real Puerto Peñasco case: a three-letter Mexican state code buried
+    # among an address, a parenthetical, and a postal code.
+    city, state = merge.extract_city_state(
+        "Hangout@Rocky Point, Playa Bonita Resort",
+        "Paseo Balboa #100, Puerto Peñasco (Rocky Point), SON, 83552",
+    )
+    assert state == "SON"
+    assert city == "Puerto Peñasco (Rocky Point)"
+
+
 def test_resolve_city_state_prefers_parsed_text():
     city, state = merge.resolve_city_state("", "Austin, TX", 30.3, -97.7)
     assert (city, state) == ("Austin", "TX")
