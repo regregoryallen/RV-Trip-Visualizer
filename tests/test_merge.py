@@ -40,6 +40,15 @@ def test_resolve_city_state_falls_back_to_geocoding_when_text_is_unparseable():
     assert city == "Golden Eagle RV Park"  # raw text, not invented
 
 
+def test_resolve_city_state_geocode_fallback_strips_duplicated_state():
+    # Location text ends in the same state abbreviation geocoding resolves -
+    # the fallback city shouldn't read "540 Therma Way, NM" next to a State
+    # column that also says "NM".
+    city, state = merge.resolve_city_state("Golden Eagle RV Park", "540 Therma Way, NM", 36.5, -105.3)
+    assert state == "NM"
+    assert city == "540 Therma Way"
+
+
 def test_resolve_city_state_returns_none_without_lat_lon_or_parseable_text():
     assert merge.resolve_city_state("Mystery Spot", "Mystery Spot", None, None) == (None, None)
 

@@ -92,3 +92,26 @@ def test_check_reports_miles_total_mismatch_beyond_tolerance(make_workbook):
     # note rather than a finding that refuses to build.
     assert report.is_clean, report.findings
     assert any("Total column" in l for l in report.log)
+
+
+def test_check_reports_a_gap_even_when_a_location_is_unresolved(make_workbook):
+    """Regression test: an unresolved city/state finding must not hide a
+    real date gap from the same report. Gap detection only needs dates, so
+    both findings should show up together in one Check Data run rather than
+    forcing the user through a fix-one-category, re-check, fix-the-next
+    cycle for unrelated problems.
+    """
+    f1 = make_workbook("trip1.xlsx", ALL_HEADERS, [
+        {"Stop Name": "Mystery Spot", "Miles": 0, "Total": 0, "Arrival Date": "6/27/19",
+         "Nights": 2, "Departure Date": "6/29/19", "Location": "Mystery Spot",
+         "Latitude": 10.0, "Longitude": -160.0},  # unresolvable - mid-Pacific
+    ])
+    f2 = make_workbook("trip2.xlsx", ALL_HEADERS, [
+        {"Stop Name": "Dallas, TX", "Miles": 200, "Total": 200, "Arrival Date": "7/15/19",
+         "Nights": 1, "Departure Date": "7/16/19", "Location": "Dallas, TX",
+         "Latitude": 32.78, "Longitude": -96.8},
+    ])
+    report = integrity.check([f1, f2])
+    assert not report.is_clean
+    assert any("state" in f.message.lower() for f in report.findings)
+    assert any("gap" in f.message.lower() for f in report.findings)

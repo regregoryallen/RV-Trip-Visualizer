@@ -138,27 +138,44 @@ def check(paths: list[str]) -> Report:
                 row=s["row"],
             )
 
-    if not report.is_clean:
-        return report
-
-    merged = merge.merge_same_location(stays)
-    for s in merged:
-        s["miles"] = round(s.pop("leg_miles"), 1)
-
+    # Gap detection only needs arrival/departure dates - it doesn't depend on
+    # city/state having resolved, so it runs regardless of the findings
+    # above. Otherwise a single unresolvable location would hide every date
+    # gap from this report, forcing the user through a fix-one-category-
+    # at-a-time loop instead of seeing everything wrong in one Check Data
+    # run. Runs on `stays` (post mileage-fold, pre same-location-merge),
+    # since merge_same_location groups by city/state and isn't safe to run
+    # while some of those are still unresolved (see below).
     prev = None
-    for s in merged:
+    for s in stays:
         if prev is not None:
             gap = (s["arrival"] - prev["departure"]).days
             if gap > GAP_TOLERANCE_DAYS:
                 report.add(
                     f"{prev['source_file']} / {s['source_file']}",
-                    f"{gap}-day gap in the record: {prev['city']}, {prev['state']} "
-                    f"(departed {prev['departure']}) -> {s['city']}, {s['state']} "
-                    f"(arrived {s['arrival']}). Add a source file covering this "
+                    f"{gap}-day gap in the record: {_label(prev)} (departed "
+                    f"{prev['departure']}) -> {_label(s)} (arrived "
+                    f"{s['arrival']}). Add a source file covering this "
                     "period and re-run.",
                 )
         prev = s
 
-    if report.is_clean:
-        report.merged_stays = merged
+    if not report.is_clean:
+        return report
+
+    # Safe only once every stay has a resolved city/state: it groups
+    # adjacent stays by (city, state), and two different stays with an
+    # unresolved (None, None) city/state would otherwise look identical and
+    # get merged together incorrectly.
+    merged = merge.merge_same_location(stays)
+    for s in merged:
+        s["miles"] = round(s.pop("leg_miles"), 1)
+
+    report.merged_stays = merged
     return report
+
+
+def _label(s: dict) -> str:
+    if s.get("state"):
+        return f"{s['city']}, {s['state']}"
+    return s.get("location") or s.get("stop_name") or "(unresolved location)"

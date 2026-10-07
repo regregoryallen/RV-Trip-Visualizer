@@ -139,7 +139,13 @@ def resolve_city_state(
     if not state:
         state = geocode.state_from_point(lat, lon)
     if not city and state:
-        city = (location or stop_name or "").strip() or None
+        raw = (location or stop_name or "").strip()
+        # The raw text sometimes already ends in the state we just resolved
+        # (e.g. Location = "540 Therma Way, NM") - strip it so the result
+        # isn't "540 Therma Way, NM" / "NM" reading as "..., NM, NM"
+        # wherever city and state get displayed together.
+        trimmed = re.sub(r",?\s*" + re.escape(state) + r"\s*$", "", raw)
+        city = trimmed.strip(", ").strip() or raw or None
     return city, state
 
 
