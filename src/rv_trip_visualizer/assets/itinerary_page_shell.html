@@ -1,0 +1,95 @@
+<meta charset="utf-8">
+<title><!--TITLE--></title>
+<style>
+  :root{
+    --bg:#f1f0e9;
+    --surface:#ffffff;
+    --surface-2:#eae8df;
+    --ink:#22251f;
+    --muted:#6e7267;
+    --hairline:#d8d5c8;
+    --accent:#2f5233;
+    --accent-ink:#1c3420;
+    --amber:#a8651f;
+    --amber-bg:#f6ead6;
+    --pine-bg:#dfe8e0;
+    --shadow: 0 1px 2px rgba(34,37,31,0.06), 0 6px 20px -8px rgba(34,37,31,0.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1a1c17; --surface:#232620; --surface-2:#2a2d25; --ink:#e9e7dc; --muted:#a3a393;
+      --hairline:#3a3d33; --accent:#7fb690; --accent-ink:#bcdcc4; --amber:#e0a860; --amber-bg:#3a2f1c;
+      --pine-bg:#243128; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -8px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1a1c17; --surface:#232620; --surface-2:#2a2d25; --ink:#e9e7dc; --muted:#a3a393;
+    --hairline:#3a3d33; --accent:#7fb690; --accent-ink:#bcdcc4; --amber:#e0a860; --amber-bg:#3a2f1c;
+    --pine-bg:#243128; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -8px rgba(0,0,0,0.5);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:48px 28px 80px; }
+  h1,h2,h3{ font-family:Iowan Old Style,Palatino Linotype,Palatino,Georgia,serif; font-weight:600; text-wrap:balance; margin:0; }
+  header.masthead{ display:flex; flex-direction:column; gap:6px; padding-bottom:28px; border-bottom:2px solid var(--accent); margin-bottom:28px; }
+  .eyebrow{ font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+  h1{ font-size:32px; }
+  .subtitle{ color:var(--muted); font-size:15.5px; max-width:64ch; }
+  .stat-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:24px 0 32px; }
+  .stat{ background:var(--surface); border:1px solid var(--hairline); border-radius:10px; padding:14px 16px; box-shadow:var(--shadow); }
+  .stat .n{ font-family:Iowan Old Style,Palatino Linotype,Georgia,serif; font-size:26px; font-variant-numeric:tabular-nums; color:var(--accent-ink); line-height:1.1; }
+  .stat .l{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:4px; }
+
+  details.year-block{ margin-bottom:22px; border-radius:10px; overflow:hidden; box-shadow:var(--shadow); background:var(--surface); }
+  summary{
+    list-style:none; cursor:pointer; display:flex; align-items:baseline; gap:14px;
+    padding:14px 18px; background:var(--surface-2); border-bottom:1px solid var(--hairline);
+    font-family:Iowan Old Style,Palatino Linotype,Georgia,serif;
+  }
+  summary::-webkit-details-marker{ display:none; }
+  summary::before{ content:"▸"; color:var(--accent); margin-right:-4px; transition:transform .15s; }
+  details[open] > summary::before{ transform:rotate(90deg); }
+  .year-num{ font-size:20px; font-weight:700; color:var(--accent-ink); }
+  .year-stats{ font-size:12.5px; color:var(--muted); font-family:-apple-system,sans-serif; letter-spacing:.02em; }
+
+  .tablewrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  thead th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);
+    font-weight:600; padding:8px 18px; border-bottom:1px solid var(--hairline); white-space:nowrap;
+  }
+  tbody td{ padding:9px 18px; border-bottom:1px solid var(--hairline); vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:none; }
+  td.num, th.num{ font-variant-numeric:tabular-nums; white-space:nowrap; width:1%; }
+  td.dates{ white-space:nowrap; font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px; }
+  .arrow{ color:var(--hairline); padding:0 7px; }
+  td.city{ font-weight:500; }
+  td.state{ color:var(--muted); font-size:13px; }
+
+  footer{ margin-top:48px; padding-top:18px; border-top:1px solid var(--hairline); color:var(--muted); font-size:12.5px; }
+  footer code{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+
+  @media (max-width:720px){ .stat-row{ grid-template-columns:repeat(2,1fr); } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">Itemized Travel Record</div>
+    <h1><!--TITLE--></h1>
+    <p class="subtitle">Every overnight stop, merged chronologically from the source exports. Fuel and cost figures are omitted — dates, duration, place, and mileage only.</p>
+  </header>
+
+  <div class="stat-row">
+    <!--STATS-->
+  </div>
+
+  <!--YEARS-->
+
+  <footer>
+    Merged chronologically from the selected source exports · same-location stays split across two file exports are merged into one line · Miles is the source tool's own Miles column, with 0-night waypoint stops (gas, lunch, etc.) folded into the next overnight stay
+  </footer>
+</div>

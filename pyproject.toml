@@ -1,0 +1,28 @@
+[project]
+name = "rv-trip-visualizer"
+version = "0.1.0"
+description = "Turns RV-trip-planner exports (TripWizard-compatible) into a corrected itinerary spreadsheet, itinerary web page, and interactive map."
+requires-python = ">=3.10"
+dependencies = [
+    "openpyxl>=3.1",
+    "shapely>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pyinstaller>=6.0",
+]
+
+[project.gui-scripts]
+rv-trip-visualizer = "rv_trip_visualizer.ui:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"rv_trip_visualizer" = ["assets/*"]

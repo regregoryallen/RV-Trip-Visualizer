@@ -1,0 +1,682 @@
+<meta charset="utf-8">
+<title><!--TITLE--></title>
+<style>
+  :root{
+    --bg:#f1f0e9; --surface:#ffffff; --surface-2:#eae8df; --ink:#22251f; --muted:#6e7267;
+    --hairline:#d8d5c8; --accent:#2f5233; --accent-ink:#1c3420;
+    --land:#e4e1d4; --land-line:#c9c5b4; --land-line-mex:#c9c5b4;
+    --shadow: 0 1px 2px rgba(34,37,31,0.06), 0 6px 20px -8px rgba(34,37,31,0.12);
+    --y2019:#3B7A96; --y2020:#3C8F6E; --y2021:#6B9A3D; --y2022:#B08F2A;
+    --y2023:#C97A2E; --y2024:#C2572F; --y2025:#AD3B52; --y2026:#8A4A8F;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1a1c17; --surface:#232620; --surface-2:#2a2d25; --ink:#e9e7dc; --muted:#a3a393;
+      --hairline:#3a3d33; --accent:#7fb690; --accent-ink:#bcdcc4;
+      --land:#2a2d24; --land-line:#3d4035; --land-line-mex:#3d4035;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -8px rgba(0,0,0,0.5);
+      --y2019:#5FA3C4; --y2020:#52B690; --y2021:#8EC25B; --y2022:#D9B550;
+      --y2023:#E6A24F; --y2024:#E07A4C; --y2025:#D06B82; --y2026:#B478BA;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1a1c17; --surface:#232620; --surface-2:#2a2d25; --ink:#e9e7dc; --muted:#a3a393;
+    --hairline:#3a3d33; --accent:#7fb690; --accent-ink:#bcdcc4;
+    --land:#2a2d24; --land-line:#3d4035; --land-line-mex:#3d4035;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -8px rgba(0,0,0,0.5);
+    --y2019:#5FA3C4; --y2020:#52B690; --y2021:#8EC25B; --y2022:#D9B550;
+    --y2023:#E6A24F; --y2024:#E07A4C; --y2025:#D06B82; --y2026:#B478BA;
+  }
+  *{box-sizing:border-box;}
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column;
+  }
+  h1,h2{ font-family:Iowan Old Style,Palatino Linotype,Palatino,Georgia,serif; font-weight:600; margin:0; text-wrap:balance; }
+
+  .wrap{ max-width:1180px; margin:0 auto; width:100%; padding:28px 24px 36px; display:flex; flex-direction:column; gap:16px; flex:1; min-height:0; }
+
+  header.masthead{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; border-bottom:2px solid var(--accent); padding-bottom:14px; }
+  .titleblock{ display:flex; flex-direction:column; gap:3px; }
+  .eyebrow{ font-size:11.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+  h1{ font-size:26px; }
+  .header-actions{ display:flex; align-items:center; gap:14px; }
+  .headline-stats{ font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  /* ---- buttons (shared outline style) ---- */
+  .btn-outline{
+    border:1px solid var(--hairline); background:var(--surface); color:var(--muted); cursor:pointer;
+    font-size:12px; font-family:inherit; padding:7px 13px; border-radius:8px; white-space:nowrap;
+    transition:border-color .12s, color .12s;
+  }
+  .btn-outline:hover{ color:var(--ink); border-color:var(--accent); }
+
+  /* ---- legend ---- */
+  .legend-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .legend{ display:flex; flex-wrap:wrap; gap:6px; flex:1; }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 8px; border-radius:100px;
+    border:1px solid var(--hairline); background:var(--surface); cursor:pointer; user-select:none;
+    font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--muted); transition:opacity .15s, border-color .15s;
+  }
+  .chip .sw{ width:10px; height:10px; border-radius:50%; flex:none; }
+  .chip.active{ color:var(--ink); border-color:var(--hairline); }
+  .chip.dim{ opacity:.35; }
+  .chip b{ color:var(--ink); font-weight:600; }
+  .chip.dim b{ color:var(--muted); }
+
+  /* ---- map stage ---- */
+  .stage{
+    position:relative; background:var(--surface); border:1px solid var(--hairline); border-radius:12px;
+    box-shadow:var(--shadow); overflow:hidden; flex:1; min-height:360px; display:flex;
+    /* Leaflet's internal panes use z-index up to ~700 for its own layering
+       (tiles/markers/popups). Without isolation, those values compete
+       directly against unrelated stacking contexts elsewhere on the page
+       (like the itinerary modal) instead of staying contained in here. */
+    isolation:isolate;
+  }
+  svg#map{ width:100%; height:100%; display:block; }
+  .state{ fill:var(--land); stroke:var(--land-line); stroke-width:1; }
+  .mexico{ fill:var(--land); stroke:var(--land-line-mex); stroke-width:1; stroke-dasharray:2 2; }
+  path.route{ fill:none; stroke:var(--accent); stroke-width:1.4; stroke-linejoin:round; stroke-linecap:round; opacity:.55; }
+  circle.stop{ stroke:var(--surface); stroke-width:1; cursor:pointer; transition:r .12s, opacity .2s; }
+  circle.stop.future{ opacity:.14; }
+  circle.stop.yeardim{ opacity:.12; }
+  circle.stop.current{ stroke:var(--ink); stroke-width:1.6; }
+
+  /* ---- real-tile basemap (Leaflet), used when the CDN isn't blocked -
+     see tryLoadLeaflet(). Falls back to the hand-drawn SVG above otherwise. */
+  #leafletMap{ position:absolute; inset:0; width:100%; height:100%; background:var(--land); }
+  #leafletMap[hidden]{ display:none; }
+  /* OSM tiles aren't theme-aware (always a light/day render) - invert
+     them in dark mode as a rough approximation rather than a hard light/dark
+     mismatch against the rest of the page. Imperfect but close enough. */
+  :root:not([data-theme="light"]) #leafletMap .leaflet-tile-pane{
+    filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.85);
+  }
+  :root[data-theme="dark"] #leafletMap .leaflet-tile-pane{
+    filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.85);
+  }
+  .leaflet-control-attribution{
+    background:var(--surface) !important; color:var(--muted) !important; font-size:10px !important;
+  }
+  .leaflet-control-attribution a{ color:var(--accent-ink) !important; }
+  .leaflet-control-zoom a{
+    background:var(--surface) !important; color:var(--ink) !important; border-color:var(--hairline) !important;
+  }
+
+  .tooltip{
+    position:absolute; pointer-events:none; background:var(--ink); color:var(--bg);
+    padding:8px 11px; border-radius:8px; font-size:12.5px; line-height:1.45; box-shadow:var(--shadow);
+    transform:translate(-50%,-100%); margin-top:-10px; white-space:nowrap; opacity:0; transition:opacity .1s;
+    z-index:5;
+  }
+  .tooltip.show{ opacity:1; }
+  .tooltip b{ font-family:Iowan Old Style,Palatino Linotype,Georgia,serif; font-size:13.5px; }
+  .tooltip .sub{ opacity:.75; font-variant-numeric:tabular-nums; }
+
+  /* ---- transport controls ---- */
+  .controls{
+    display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--hairline);
+    border-radius:12px; padding:12px 16px; box-shadow:var(--shadow); flex-wrap:wrap;
+  }
+  button.play{
+    flex:none; width:34px; height:34px; border-radius:50%; border:1px solid var(--hairline); background:var(--surface-2);
+    color:var(--accent-ink); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  button.play:hover{ border-color:var(--accent); }
+  .speed-control{
+    flex:none; display:flex; border:1px solid var(--hairline); border-radius:8px; overflow:hidden;
+  }
+  .speed-btn{
+    flex:none; border:none; background:var(--surface-2); color:var(--muted); cursor:pointer;
+    font-size:11.5px; font-family:inherit; padding:7px 10px; border-left:1px solid var(--hairline);
+    transition:background .12s, color .12s;
+  }
+  .speed-btn:first-child{ border-left:none; }
+  .speed-btn:hover{ color:var(--ink); }
+  .speed-btn.active{ background:var(--accent); color:var(--surface); font-weight:600; }
+  .slider-col{ flex:1 1 120px; min-width:100px; display:flex; flex-direction:column; gap:4px; }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:2px;
+    background:var(--hairline); outline:none; margin:0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:var(--accent);
+    border:2px solid var(--surface); box-shadow:0 0 0 1px var(--accent); cursor:pointer; margin-top:-5.5px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:15px; height:15px; border-radius:50%; background:var(--accent); border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--accent); cursor:pointer;
+  }
+  .slider-labels{ display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  /* fixed width + ellipsis, not min-width, so a long city name never reflows
+     and shrinks the slider track - it truncates instead (full text in title attr) */
+  .readout{ flex:0 0 280px; width:280px; text-align:right; overflow:hidden; }
+  .readout .date, .readout .loc{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .readout .date{ font-family:Iowan Old Style,Palatino Linotype,Georgia,serif; font-size:15px; color:var(--accent-ink); }
+  .readout .loc{ font-size:12.5px; color:var(--muted); }
+
+  footer{ color:var(--muted); font-size:11.5px; text-align:center; padding-top:2px; }
+  footer code{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+
+  /* ---- itinerary modal ---- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(10,12,8,.5); display:flex; align-items:center; justify-content:center;
+    padding:28px; z-index:1000; /* comfortably above Leaflet's own internal panes (~700 max) */
+  }
+  .modal-overlay[hidden]{ display:none; }
+  .modal-panel{
+    background:var(--bg); border:1px solid var(--hairline); border-radius:14px; box-shadow:var(--shadow);
+    width:100%; max-width:880px; max-height:88vh; min-height:0; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .modal-header{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    padding:18px 22px; border-bottom:2px solid var(--accent); flex:none;
+  }
+  .modal-header h2{ font-size:21px; }
+  .modal-subtitle{ font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .modal-close{
+    flex:none; border:1px solid var(--hairline); background:var(--surface-2); color:var(--muted); border-radius:50%;
+    width:30px; height:30px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center;
+  }
+  .modal-close:hover{ color:var(--ink); border-color:var(--accent); }
+  /* flex:1 + min-height:0 is required here - without it a flex child defaults
+     to min-height:auto, which overrides the panel's max-height/overflow:hidden
+     and lets content spill out instead of scrolling inside modal-body.
+     Deliberately NOT display:flex here - a flex column would let its children
+     (the year blocks) flex-shrink below their content height to force-fit the
+     visible area instead of overflowing and triggering the scrollbar. */
+  .modal-body{ flex:1 1 auto; min-height:0; overflow-y:auto; padding:18px 22px 24px; }
+
+  details.year-block{ border-radius:10px; overflow:hidden; border:1px solid var(--hairline); background:var(--surface); margin-bottom:12px; }
+  details.year-block:last-child{ margin-bottom:0; }
+  details.year-block summary{
+    list-style:none; cursor:pointer; display:flex; align-items:baseline; gap:14px;
+    padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--hairline);
+    font-family:Iowan Old Style,Palatino Linotype,Georgia,serif;
+  }
+  details.year-block summary::-webkit-details-marker{ display:none; }
+  details.year-block summary::before{ content:"▸"; color:var(--accent); margin-right:-4px; transition:transform .15s; }
+  details.year-block[open] > summary::before{ transform:rotate(90deg); }
+  .year-num{ font-size:17px; font-weight:700; color:var(--accent-ink); }
+  .year-stats{ font-size:11.5px; color:var(--muted); font-family:-apple-system,sans-serif; }
+  .modal-body .tablewrap{ overflow-x:auto; }
+  .modal-body table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .modal-body thead th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);
+    font-weight:600; padding:7px 16px; border-bottom:1px solid var(--hairline); white-space:nowrap;
+  }
+  .modal-body tbody td{ padding:7px 16px; border-bottom:1px solid var(--hairline); }
+  .modal-body tbody tr:last-child td{ border-bottom:none; }
+  .modal-body td.num{ font-variant-numeric:tabular-nums; width:1%; white-space:nowrap; }
+  .modal-body td.dates{ white-space:nowrap; font-variant-numeric:tabular-nums; color:var(--muted); font-size:12.5px; }
+  .modal-body td.dates .arrow{ color:var(--hairline); padding:0 6px; }
+  .modal-body td.state{ color:var(--muted); font-size:12.5px; }
+
+  @media (max-width:640px){
+    .readout{ flex:1 1 auto; width:auto; text-align:left; }
+    .controls{ flex-direction:column; align-items:stretch; }
+    .header-actions{ width:100%; justify-content:space-between; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="titleblock">
+      <div class="eyebrow">Route Map</div>
+      <h1><!--TITLE--></h1>
+    </div>
+    <div class="header-actions">
+      <div class="headline-stats" id="headStats">—</div>
+      <button class="btn-outline" id="itineraryBtn">Itinerary</button>
+    </div>
+  </header>
+
+  <div class="legend-row">
+    <div class="legend" id="legend"></div>
+    <button class="btn-outline" id="toggleAllBtn">Clear All</button>
+  </div>
+
+  <div class="stage">
+    <svg id="map" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet">
+      <g class="basemap"></g>
+      <path class="route" id="route" d=""/>
+      <g id="stops"></g>
+    </svg>
+    <div id="leafletMap" hidden></div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div class="controls">
+    <button class="play" id="playBtn" title="Play / pause" aria-label="Play timeline">▶</button>
+    <div class="speed-control" id="speedControl" role="group" aria-label="Playback speed">
+      <button class="speed-btn" data-dps="20">Slow</button>
+      <button class="speed-btn active" data-dps="60">Medium</button>
+      <button class="speed-btn" data-dps="150">Fast</button>
+    </div>
+    <div class="slider-col">
+      <input type="range" id="slider" min="0" max="1" value="1" step="1">
+      <div class="slider-labels"><span id="sliderStart">—</span><span id="sliderEnd">—</span></div>
+    </div>
+    <div class="readout" id="readout">
+      <div class="date">—</div>
+      <div class="loc">—</div>
+    </div>
+  </div>
+
+  <footer>Merged chronologically from the selected source exports · <span id="basemapNote">basemap: US Census TIGER (via public domain mirrors), Albers projection</span></footer>
+</div>
+
+<div class="modal-overlay" id="itineraryOverlay" hidden>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="itineraryTitle">
+    <div class="modal-header">
+      <div>
+        <h2 id="itineraryTitle">The Itinerary</h2>
+        <div class="modal-subtitle" id="itinerarySubtitle">—</div>
+      </div>
+      <button class="modal-close" id="itineraryClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="itineraryBody"></div>
+  </div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/;
+
+const svg = document.getElementById('map');
+const stopsG = document.getElementById('stops');
+const routePath = document.getElementById('route');
+const tooltip = document.getElementById('tooltip');
+const slider = document.getElementById('slider');
+const readout = document.getElementById('readout');
+const playBtn = document.getElementById('playBtn');
+const legend = document.getElementById('legend');
+
+svg.setAttribute('viewBox', DATA.viewbox.join(' '));
+
+const years = [...new Set(DATA.points.map(p => p.arrival.slice(0,4)))].sort();
+const activeYears = new Set(years);
+
+const totalNights = DATA.points.reduce((a,p) => a + p.nights, 0);
+const totalMilesHead = DATA.points.reduce((a,p) => a + (p.miles||0), 0);
+document.getElementById('headStats').textContent =
+  `${DATA.points.length} stops · ${totalNights.toLocaleString()} nights · ${Math.round(totalMilesHead).toLocaleString()} miles · ${years[0]}–${years[years.length-1]}`;
+document.getElementById('sliderStart').textContent =
+  new Date(DATA.points[0].arrival+'T00:00:00').toLocaleDateString('en-US',{month:'short',year:'numeric'});
+document.getElementById('sliderEnd').textContent =
+  new Date(DATA.points[DATA.points.length-1].arrival+'T00:00:00').toLocaleDateString('en-US',{month:'short',year:'numeric'});
+
+// ---- time model: the slider/playback position is a day offset into the
+// trip's real calendar span, not a stop index - so a 1-night stop flashes
+// by and a 130-night stop lingers, proportionally to how long it actually was.
+const DAY_MS = 86400000;
+const toMs = (d) => Date.parse(d + 'T00:00:00Z');
+DATA.points.forEach(p => { p.arrivalMs = toMs(p.arrival); p.departureMs = toMs(p.departure); });
+const firstMs = DATA.points[0].arrivalMs;
+const lastMs = DATA.points[DATA.points.length-1].departureMs;
+const totalDays = (lastMs - firstMs) / DAY_MS;
+const dayOf = (ms) => (ms - firstMs) / DAY_MS;
+
+// ---- basemap mode: real tiles (Leaflet) when available, hand-drawn SVG
+// otherwise. The SVG path is built unconditionally first (cheap, instant,
+// zero dependencies) so there's always something correct on screen; Leaflet
+// is then attempted asynchronously and swaps in if it loads. ----
+let mapMode = 'svg';
+let leaflet = null, leafletMarkers = [], leafletRoute = null;
+const svgCircles = [];
+
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function buildSvgBasemap(){
+  const basemapG = document.querySelector('.basemap');
+  for (const s of DATA.states) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('class','state'); p.setAttribute('d', s.d); p.setAttribute('data-name', s.name);
+    basemapG.appendChild(p);
+  }
+  const mex = document.createElementNS('http://www.w3.org/2000/svg','path');
+  mex.setAttribute('class','mexico'); mex.setAttribute('d', DATA.mexico_d);
+  basemapG.appendChild(mex);
+}
+
+function buildSvgMarkers(){
+  DATA.points.forEach((pt, i) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('class','stop');
+    c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y);
+    c.setAttribute('r', pt.nights >= 14 ? 5.5 : pt.nights >= 4 ? 4 : 3);
+    c.setAttribute('fill', `var(--y${pt.arrival.slice(0,4)})`);
+    c.addEventListener('mouseenter', () => showTooltip(i));
+    c.addEventListener('mousemove', (e) => positionTooltip(e));
+    c.addEventListener('mouseleave', hideTooltip);
+    c.addEventListener('click', () => { slider.value = dayOf(pt.arrivalMs); render(); });
+    stopsG.appendChild(c);
+    svgCircles.push(c);
+  });
+}
+
+// Try to load Leaflet from a CDN. In the sandboxed Claude Artifact preview
+// this is blocked by CSP and onerror fires (or it just times out) - either
+// way we resolve false and the SVG map built above stays in place. Opened
+// directly in a browser, or self-hosted, it resolves true and real
+// tiles take over.
+function tryLoadLeaflet(timeoutMs = 4000){
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok) => { if (!settled) { settled = true; resolve(ok); } };
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => finish(!!window.L);
+    script.onerror = () => finish(false);
+    document.head.appendChild(script);
+    setTimeout(() => finish(false), timeoutMs);
+  });
+}
+
+function initLeafletMap(){
+  svg.style.display = 'none';
+  const container = document.getElementById('leafletMap');
+  container.hidden = false;
+
+  leaflet = L.map(container, { zoomControl: true, attributionControl: true, minZoom: 3, maxZoom: 18 });
+
+  // tile.openstreetmap.org rejects requests carrying `Origin: null`, which
+  // is exactly what a page opened as file:// sends - that's the 403 you get
+  // double-clicking this file. It has nothing to do with third-party
+  // embedding in general: served over a real http(s) origin (a local
+  // preview server, or any hosted deployment), these same tiles load fine -
+  // confirmed against this project's own basemap setup at
+  // github.com/regregoryallen/Poudre-Map before picking this URL.
+  const tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(leaflet);
+
+  // Safety net: if this tile host ever gets blocked too (same failure mode
+  // as the OSM 403), don't leave a map full of broken tile icons - revert to
+  // the offline SVG map, which is always correct even if less pretty.
+  let tileOk = 0, tileErr = 0, tileFallbackChecked = false;
+  tileLayer.on('tileload', () => tileOk++);
+  tileLayer.on('tileerror', () => tileErr++);
+  setTimeout(() => {
+    if (tileFallbackChecked) return;
+    tileFallbackChecked = true;
+    if (tileOk === 0 && tileErr >= 3) {
+      console.warn(`Tile provider appears blocked (${tileErr} errors, 0 successful loads) - reverting to the offline SVG map.`);
+      revertToSvgMap();
+    }
+  }, 3500);
+
+  // Our own cached state boundaries, overlaid on top so they're always crisp
+  // regardless of whether the tile style renders them. interactive:false
+  // lets clicks/drags pass through to the map and the markers beneath it.
+  L.geoJSON(DATA.states_geojson, {
+    interactive: false,
+    style: { color: cssVar('--accent-ink'), weight: 1.2, opacity: .65, fill: false }
+  }).addTo(leaflet);
+
+  const bounds = L.latLngBounds(DATA.points.map(p => [p.lat, p.lon]));
+  leaflet.fitBounds(bounds, { padding: [28, 28] });
+
+  // thicker/higher-contrast than the SVG version - needed to read clearly
+  // against real map imagery instead of a flat stone background
+  leafletRoute = L.polyline([], {
+    color: cssVar('--accent-ink'), weight: 3, opacity: .8, lineJoin: 'round'
+  }).addTo(leaflet);
+
+  DATA.points.forEach((pt, i) => {
+    const m = L.circleMarker([pt.lat, pt.lon], {
+      radius: pt.nights >= 14 ? 7 : pt.nights >= 4 ? 5.5 : 4,
+      color: 'rgba(20,20,16,.55)', weight: 1.5,
+      fillColor: cssVar(`--y${pt.arrival.slice(0,4)}`), fillOpacity: .92
+    });
+    m.on('mouseover', (e) => { showTooltip(i); positionTooltip(e.originalEvent); });
+    m.on('mousemove', (e) => positionTooltip(e.originalEvent));
+    m.on('mouseout', hideTooltip);
+    m.on('click', () => { slider.value = dayOf(pt.arrivalMs); render(); });
+    m.addTo(leaflet);
+    leafletMarkers.push(m);
+  });
+
+  mapMode = 'leaflet';
+}
+
+function revertToSvgMap(){
+  if (leaflet) { leaflet.remove(); leaflet = null; }
+  document.getElementById('leafletMap').hidden = true;
+  leafletMarkers = []; leafletRoute = null;
+  svg.style.display = '';
+  mapMode = 'svg';
+  document.getElementById('basemapNote').textContent =
+    'basemap: US Census TIGER (via public domain mirrors), Albers projection - the tile basemap was blocked, offline map shown instead';
+  render();
+}
+
+// ---- legend ----
+const yearCounts = {};
+for (const p of DATA.points) { const y = p.arrival.slice(0,4); yearCounts[y] = (yearCounts[y]||0)+1; }
+const chipsByYear = {};
+for (const y of years) {
+  const chip = document.createElement('div');
+  chip.className = 'chip active';
+  chip.innerHTML = `<span class="sw" style="background:var(--y${y})"></span><b>${y}</b> ${yearCounts[y]} stops`;
+  chip.addEventListener('click', () => {
+    if (activeYears.has(y)) activeYears.delete(y); else activeYears.add(y);
+    chip.classList.toggle('dim', !activeYears.has(y));
+    chip.classList.toggle('active', activeYears.has(y));
+    updateToggleAllLabel();
+    render();
+  });
+  legend.appendChild(chip);
+  chipsByYear[y] = chip;
+}
+
+// ---- select all / clear all ----
+const toggleAllBtn = document.getElementById('toggleAllBtn');
+function updateToggleAllLabel(){
+  toggleAllBtn.textContent = activeYears.size === years.length ? 'Clear All' : 'Select All';
+}
+toggleAllBtn.addEventListener('click', () => {
+  const turningOn = activeYears.size !== years.length;
+  for (const y of years) {
+    if (turningOn) activeYears.add(y); else activeYears.delete(y);
+    chipsByYear[y].classList.toggle('active', turningOn);
+    chipsByYear[y].classList.toggle('dim', !turningOn);
+  }
+  updateToggleAllLabel();
+  render();
+});
+updateToggleAllLabel();
+
+// ---- tooltip ----
+function fmtDate(d){
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function showTooltip(i){
+  const p = DATA.points[i];
+  tooltip.innerHTML = `<b>${p.city}, ${p.state}</b><br><span class="sub">${fmtDate(p.arrival)} → ${fmtDate(p.departure)} · ${p.nights} night${p.nights===1?'':'s'}</span>`;
+  tooltip.classList.add('show');
+}
+function positionTooltip(e){
+  const stageRect = document.querySelector('.stage').getBoundingClientRect();
+  tooltip.style.left = (e.clientX - stageRect.left) + 'px';
+  tooltip.style.top = (e.clientY - stageRect.top) + 'px';
+}
+function hideTooltip(){ tooltip.classList.remove('show'); }
+
+// ---- timeline ----
+slider.min = 0;
+slider.max = totalDays;
+slider.step = 0.2;
+slider.value = totalDays;
+
+function render(){
+  const cutoffMs = firstMs + parseFloat(slider.value) * DAY_MS;
+  let currentIdx = 0;
+
+  if (mapMode === 'svg') {
+    let pathD = '';
+    svgCircles.forEach((c, i) => {
+      const p = DATA.points[i];
+      const yearOn = activeYears.has(p.arrival.slice(0,4));
+      const visited = p.arrivalMs <= cutoffMs;
+      c.classList.toggle('yeardim', !yearOn);
+      c.classList.toggle('future', !visited);
+      if (visited) {
+        currentIdx = i; // points are chronological, so the last visited one is current
+        if (yearOn) pathD += (pathD === '' ? 'M' : ' L') + p.x + ',' + p.y;
+      }
+    });
+    svgCircles.forEach((c, i) => c.classList.toggle('current', i === currentIdx));
+    routePath.setAttribute('d', pathD);
+  } else {
+    DATA.points.forEach((p, i) => { if (p.arrivalMs <= cutoffMs) currentIdx = i; });
+    const pathLatLngs = [];
+    leafletMarkers.forEach((m, i) => {
+      const p = DATA.points[i];
+      const yearOn = activeYears.has(p.arrival.slice(0,4));
+      const visited = p.arrivalMs <= cutoffMs;
+      const isCurrent = i === currentIdx; // currentIdx is final now - single pass is safe
+      m.setStyle({
+        fillOpacity: !yearOn ? .12 : (visited ? .92 : .15),
+        opacity: !yearOn ? .2 : (visited ? 1 : .25),
+        weight: isCurrent ? 2.5 : 1.5,
+        color: isCurrent ? cssVar('--ink') : 'rgba(20,20,16,.55)',
+      });
+      if (visited && yearOn) pathLatLngs.push([p.lat, p.lon]);
+    });
+    leafletRoute.setLatLngs(pathLatLngs);
+  }
+
+  const cur = DATA.points[currentIdx];
+  const next = DATA.points[currentIdx + 1];
+  const inTransit = next && cutoffMs >= cur.departureMs;
+  const dateText = fmtDate(cur.arrival) + (cur.nights>0 ? ' → ' + fmtDate(cur.departure) : '');
+  const locText = inTransit
+    ? `${cur.city}, ${cur.state} · on the way to ${next.city}, ${next.state}`
+    : `${cur.city}, ${cur.state} · ${cur.nights} night${cur.nights===1?'':'s'} · stop ${currentIdx+1} of ${DATA.points.length}`;
+  const dateEl = readout.querySelector('.date'), locEl = readout.querySelector('.loc');
+  // fixed-width readout truncates with an ellipsis instead of reflowing the
+  // layout (long city names like the Puerto Peñasco stop would otherwise
+  // make the slider bounce) - title attr surfaces the full text on hover.
+  dateEl.textContent = dateText; dateEl.title = dateText;
+  locEl.textContent = locText; locEl.title = locText;
+}
+slider.addEventListener('input', render);
+
+// Build the offline SVG map first - instant, zero dependencies, always
+// correct - then try to enhance to real tiles. If that fails or is blocked
+// (e.g. the sandboxed Claude Artifact preview), the SVG map already on
+// screen is simply what the viewer keeps seeing, with no broken/blank step.
+buildSvgBasemap();
+buildSvgMarkers();
+render();
+tryLoadLeaflet().then(ok => {
+  if (ok) {
+    try {
+      initLeafletMap();
+      render();
+      document.getElementById('basemapNote').textContent = 'basemap: OpenStreetMap, state lines overlaid separately';
+    } catch (e) {
+      console.warn('Leaflet enhancement failed, staying on the SVG map:', e);
+    }
+  }
+});
+
+// ---- play / pause ----
+// Speed = simulated days of travel per real second, so a long stay keeps
+// the playhead lingering on it and a one-night stop flashes by - not a
+// fixed delay per stop.
+let playing = false, timer = null, daysPerSec = 60;
+const TICK_MS = 33;
+
+function startTimer(){
+  clearInterval(timer);
+  let last = performance.now();
+  timer = setInterval(() => {
+    const now = performance.now();
+    const elapsedSec = (now - last) / 1000;
+    last = now;
+    let v = parseFloat(slider.value) + daysPerSec * elapsedSec;
+    if (v >= totalDays) { v = totalDays; playing = false; playBtn.textContent = '▶'; clearInterval(timer); }
+    slider.value = v; render();
+  }, TICK_MS);
+}
+
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    daysPerSec = parseFloat(btn.dataset.dps);
+    if (playing) startTimer();
+  });
+});
+
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.textContent = playing ? '⏸' : '▶';
+  if (playing) {
+    if (parseFloat(slider.value) >= totalDays) slider.value = 0;
+    startTimer();
+  } else {
+    clearInterval(timer);
+  }
+});
+
+// ---- itinerary modal (full trip, independent of the map's year filter) ----
+const itineraryBtn = document.getElementById('itineraryBtn');
+const itineraryOverlay = document.getElementById('itineraryOverlay');
+const itineraryClose = document.getElementById('itineraryClose');
+const itineraryBody = document.getElementById('itineraryBody');
+
+function buildItineraryHTML(){
+  const byYear = {};
+  for (const p of DATA.points) (byYear[p.arrival.slice(0,4)] ??= []).push(p);
+  return years.map(y => {
+    const stops = byYear[y];
+    const nights = stops.reduce((a,p) => a + p.nights, 0);
+    const miles = stops.reduce((a,p) => a + (p.miles||0), 0);
+    const states = new Set(stops.map(p => p.state));
+    const rows = stops.map(p => `<tr>
+        <td class="dates">${fmtDate(p.arrival)}<span class="arrow">→</span>${fmtDate(p.departure)}</td>
+        <td class="num">${p.nights}</td>
+        <td>${p.city}</td>
+        <td class="state">${p.state}</td>
+        <td class="num">${Math.round(p.miles||0).toLocaleString()}</td>
+      </tr>`).join('');
+    return `<details class="year-block" open>
+        <summary><span class="year-num">${y}</span><span class="year-stats">${nights} nights · ${stops.length} stops · ${states.size} states · ${Math.round(miles).toLocaleString()} miles</span></summary>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Dates</th><th class="num">Nights</th><th>City</th><th>State</th><th class="num">Miles</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </details>`;
+  }).join('');
+}
+
+let itineraryBuilt = false;
+function openItinerary(){
+  if (!itineraryBuilt) {
+    itineraryBody.innerHTML = buildItineraryHTML();
+    const totalMiles = DATA.points.reduce((a,p) => a + (p.miles||0), 0);
+    document.getElementById('itinerarySubtitle').textContent =
+      `${DATA.points.length} stops · ${totalNights.toLocaleString()} nights · ${Math.round(totalMiles).toLocaleString()} miles · ${years[0]}–${years[years.length-1]}`;
+    itineraryBuilt = true;
+  }
+  itineraryOverlay.hidden = false;
+}
+function closeItinerary(){ itineraryOverlay.hidden = true; }
+itineraryBtn.addEventListener('click', openItinerary);
+itineraryClose.addEventListener('click', closeItinerary);
+itineraryOverlay.addEventListener('click', (e) => { if (e.target === itineraryOverlay) closeItinerary(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !itineraryOverlay.hidden) closeItinerary(); });
+</script>

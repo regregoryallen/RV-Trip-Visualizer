@@ -1,0 +1,29 @@
+# Personal travel data - the repo ships the tool, not the owner's trip history
+/Data/
+/gap-corrections.json
+itinerary-data.json
+RV-Itinerary-*.xlsx
+RV-Itinerary-*.html
+RV-Map-*.html
+*.~lock.*
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+*.spec.bak
+.pytest_cache/
+
+# Claude Code local session config - not part of the project
+/.claude/
+
+# Local settings/config the UI persists between runs
+.rv-trip-visualizer-settings.json
+
+# OS cruft
+.DS_Store
+Thumbs.db
