@@ -91,16 +91,13 @@
      see tryLoadLeaflet(). Falls back to the hand-drawn SVG above otherwise. */
   #leafletMap{ position:absolute; inset:0; width:100%; height:100%; background:var(--land); }
   #leafletMap[hidden]{ display:none; }
-  /* The basemap tiles aren't theme-aware (always a light/day render) -
-     invert them in dark mode as a rough approximation rather than a hard
-     light/dark mismatch against the rest of the page. Imperfect but close
-     enough. */
-  :root:not([data-theme="light"]) #leafletMap .leaflet-tile-pane{
-    filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.85);
-  }
-  :root[data-theme="dark"] #leafletMap .leaflet-tile-pane{
-    filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.85);
-  }
+  /* The basemap tiles aren't theme-aware (always a light/day render).
+     Tried inverting them for dark mode as a rough approximation, but
+     USGS Topo's terrain shading and colors invert into a muddy, high-
+     contrast result that washes out the route lines and markers on top of
+     it - worse than just leaving the tiles alone. Poudre-Map (this
+     project's sibling) made the same call: darken the chrome around the
+     map, leave the tile imagery itself untouched. */
   .leaflet-control-attribution{
     background:var(--surface) !important; color:var(--muted) !important; font-size:10px !important;
   }
