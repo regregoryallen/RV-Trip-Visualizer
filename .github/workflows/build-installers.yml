@@ -2,6 +2,7 @@ name: Build installers
 
 on:
   push:
+    branches: [main]
     tags: ["v*"]
   workflow_dispatch:
 
@@ -39,15 +40,40 @@ jobs:
           name: RVTripVisualizer-linux-appimage
           path: dist/RVTripVisualizer-x86_64.AppImage
 
+  # A single rolling "latest" release, no GitHub account or `gh` CLI needed
+  # to get the installers - action-gh-release updates (not recreates) the
+  # existing release/tag when given the same tag_name, so this just keeps
+  # replacing the same two file names on every push to main. Stable public
+  # download links (never change, always serve whatever this job last
+  # uploaded):
+  #   https://github.com/<owner>/<repo>/releases/latest/download/RVTripVisualizer-Setup.exe
+  #   https://github.com/<owner>/<repo>/releases/latest/download/RVTripVisualizer-x86_64.AppImage
+  # A real "v*" tag still works too (e.g. `git tag v0.2.0 && git push --tags`)
+  # and creates its own separate, permanently pinned release - useful later
+  # if stable version history matters, not required for "latest" to work.
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: [windows, linux]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Create release and attach installers
+      - name: Publish/update the "latest" release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          body: Automatically rebuilt from ${{ github.sha }} on every push to main.
+          prerelease: false
+          make_latest: true
+          files: |
+            artifacts/RVTripVisualizer-windows-installer/RVTripVisualizer-Setup.exe
+            artifacts/RVTripVisualizer-linux-appimage/RVTripVisualizer-x86_64.AppImage
+      - name: Publish a versioned release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |

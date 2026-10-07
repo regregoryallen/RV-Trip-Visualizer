@@ -16,6 +16,19 @@ export format, but works with any export that uses the same column headers
 (see **Required columns** below) - extra columns, reordered columns, and
 extra leading rows are all tolerated.
 
+## Download
+
+No GitHub account or command-line tools needed - these links always point
+to the most recently built installer:
+
+- **[Download for Windows](https://github.com/regregoryallen/RV-Trip-Visualizer/releases/latest/download/RVTripVisualizer-Setup.exe)**
+- **[Download for Linux (AppImage)](https://github.com/regregoryallen/RV-Trip-Visualizer/releases/latest/download/RVTripVisualizer-x86_64.AppImage)**
+  (`chmod +x` it, then run it directly - no installation step)
+
+Rebuilt automatically on every push to `main`; see
+[Releases](https://github.com/regregoryallen/RV-Trip-Visualizer/releases) for
+the build history.
+
 **There is no mechanism for correcting bad or incomplete source data from
 inside this tool.** If the integrity check finds a problem, it stops there
 and tells you what's wrong; the fix is always to correct it in the
