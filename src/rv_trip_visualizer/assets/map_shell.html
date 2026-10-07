@@ -91,9 +91,10 @@
      see tryLoadLeaflet(). Falls back to the hand-drawn SVG above otherwise. */
   #leafletMap{ position:absolute; inset:0; width:100%; height:100%; background:var(--land); }
   #leafletMap[hidden]{ display:none; }
-  /* OSM tiles aren't theme-aware (always a light/day render) - invert
-     them in dark mode as a rough approximation rather than a hard light/dark
-     mismatch against the rest of the page. Imperfect but close enough. */
+  /* The basemap tiles aren't theme-aware (always a light/day render) -
+     invert them in dark mode as a rough approximation rather than a hard
+     light/dark mismatch against the rest of the page. Imperfect but close
+     enough. */
   :root:not([data-theme="light"]) #leafletMap .leaflet-tile-pane{
     filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.85);
   }
@@ -381,6 +382,42 @@ function tryLoadLeaflet(timeoutMs = 4000){
   });
 }
 
+// USGS The National Map's topo tiles: no Referer/Origin policy to run
+// into (unlike tile.openstreetmap.org - see tileLooksBlocked() below for
+// what that one actually does), and they show state boundaries and city
+// labels prominently, which is what this map wants a basemap for in the
+// first place. Confirmed against this project's own basemap setup at
+// github.com/regregoryallen/Poudre-Map before picking this URL. Note the
+// {z}/{y}/{x} order - ArcGIS tile endpoints use y-before-x, the reverse of
+// the OSM/XYZ convention.
+const TILE_URL = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}';
+const TILE_ATTRIBUTION = 'USGS The National Map';
+
+// img.onerror / Leaflet's 'tileerror' only fire on a genuine network/decode
+// failure - they miss a server that returns a perfectly valid, correctly-
+// sized image with HTTP 200 whose *content* just isn't a map tile.
+// tile.openstreetmap.org does exactly this when no Referer header is
+// present (which a file:// page never sends, by browser design): it serves
+// a real 256x256 PNG reading "Access blocked" with status 200 and an
+// `x-blocked` response header - Leaflet sees a perfectly normal successful
+// tile load. That's why this project moved off OSM's tile server rather
+// than just trusting the tileerror-counting safety net below: fetching one
+// real tile and inspecting the actual response, before ever switching the
+// UI into Leaflet mode, catches this class of failure that an <img> tag
+// structurally cannot see. Kept as a general check (any x-blocked-style
+// header, not an OSM-specific hack) in case a future tile source does
+// something similar.
+async function tileLooksBlocked(url){
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return true;
+    if (res.headers.get('x-blocked')) return true;
+    return false;
+  } catch (e) {
+    return true; // network error, blocked by CSP/CORS, etc.
+  }
+}
+
 function initLeafletMap(){
   svg.style.display = 'none';
   const container = document.getElementById('leafletMap');
@@ -388,21 +425,13 @@ function initLeafletMap(){
 
   leaflet = L.map(container, { zoomControl: true, attributionControl: true, minZoom: 3, maxZoom: 18 });
 
-  // tile.openstreetmap.org rejects requests carrying `Origin: null`, which
-  // is exactly what a page opened as file:// sends - that's the 403 you get
-  // double-clicking this file. It has nothing to do with third-party
-  // embedding in general: served over a real http(s) origin (a local
-  // preview server, or any hosted deployment), these same tiles load fine -
-  // confirmed against this project's own basemap setup at
-  // github.com/regregoryallen/Poudre-Map before picking this URL.
-  const tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19
-  }).addTo(leaflet);
+  const tileLayer = L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 16 }).addTo(leaflet);
 
-  // Safety net: if this tile host ever gets blocked too (same failure mode
-  // as the OSM 403), don't leave a map full of broken tile icons - revert to
-  // the offline SVG map, which is always correct even if less pretty.
+  // Second line of defense, for a genuine mid-session network failure after
+  // the pre-flight check (tileLooksBlocked, run before this function is
+  // ever called) already passed: don't leave a map full of broken tile
+  // icons - revert to the offline SVG map, which is always correct even if
+  // less pretty.
   let tileOk = 0, tileErr = 0, tileFallbackChecked = false;
   tileLayer.on('tileload', () => tileOk++);
   tileLayer.on('tileerror', () => tileErr++);
@@ -580,15 +609,23 @@ slider.addEventListener('input', render);
 buildSvgBasemap();
 buildSvgMarkers();
 render();
-tryLoadLeaflet().then(ok => {
-  if (ok) {
-    try {
-      initLeafletMap();
-      render();
-      document.getElementById('basemapNote').textContent = 'basemap: OpenStreetMap, state lines overlaid separately';
-    } catch (e) {
-      console.warn('Leaflet enhancement failed, staying on the SVG map:', e);
-    }
+tryLoadLeaflet().then(async (ok) => {
+  if (!ok) return;
+  // z=0/y=0/x=0 (the whole-world overview tile) always exists for any
+  // global tile source, so it's a safe, cheap probe - one fetch, checked for
+  // real before the UI ever switches into Leaflet mode (see tileLooksBlocked
+  // above for why this catches what tileerror-counting alone would miss).
+  const probeUrl = TILE_URL.replace('{z}', '0').replace('{y}', '0').replace('{x}', '0');
+  if (await tileLooksBlocked(probeUrl)) {
+    console.warn('Tile provider returned a blocked/placeholder response - staying on the offline SVG map.');
+    return;
+  }
+  try {
+    initLeafletMap();
+    render();
+    document.getElementById('basemapNote').textContent = `basemap: ${TILE_ATTRIBUTION}, state lines overlaid separately`;
+  } catch (e) {
+    console.warn('Leaflet enhancement failed, staying on the SVG map:', e);
   }
 });
 

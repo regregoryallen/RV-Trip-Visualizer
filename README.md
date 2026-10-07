@@ -8,7 +8,8 @@ Turns a set of RV-trip-planner export files into:
 2. An itemized itinerary - every overnight stay, with mileage - as a
    spreadsheet and a standalone web page.
 3. An interactive map, color-coded by year, with a timeline scrubber and a
-   real OpenStreetMap basemap (with an offline hand-drawn fallback).
+   real basemap showing roads, state boundaries, and city labels (with an
+   offline hand-drawn fallback).
 
 It was built around [TripWizard](https://www.tripwizard.com/)'s `.xlsx`
 export format, but works with any export that uses the same column headers
@@ -51,10 +52,12 @@ Run the test suite with `pip install -e ".[dev]"` then `pytest tests/`.
 
 ## Viewing the generated map with real tiles
 
-Opening the generated map HTML file directly (double-click, `file://`) shows
-the offline hand-drawn SVG basemap - OpenStreetMap's tile server rejects the
-`Origin: null` header a `file://` page sends. Serve the output folder over
-plain HTTP instead to get real map tiles:
+The map checks the real tile host's response before switching away from the
+offline hand-drawn SVG basemap (see `docs/HISTORY.md` for why that check
+exists), so it degrades gracefully rather than showing broken tiles if a
+tile host ever rejects it. If you want to guarantee real map tiles
+regardless of how the file was opened, serve the output folder over plain
+HTTP:
 
 ```bash
 python3 -m http.server --directory /path/to/your/output 8000

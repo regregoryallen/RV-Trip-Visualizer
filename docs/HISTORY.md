@@ -122,14 +122,11 @@ no build-time framework) with a **dual-mode basemap**:
 1. **SVG fallback** (always built first, zero dependencies): a hand-drawn
    US map using a real Albers projection (same formula/parameters D3 uses)
    over cached US Census TIGER-derived state boundaries (`assets/us-states.json`).
-   This is the mode you get when the page is opened as a `file://` URL,
-   because a `file://` page sends `Origin: null`, which OpenStreetMap's tile
-   server (correctly) rejects.
-2. **Leaflet-enhanced mode**: attempts to load Leaflet + OpenStreetMap raster
-   tiles (`tile.openstreetmap.org`) from a CDN. Works whenever the page is
-   served over a real http(s) origin - a local preview server, or any
-   hosted deployment. Confirmed against this project's own basemap approach
-   in a sibling project (Poudre-Map) before picking this URL.
+2. **Leaflet-enhanced mode**: loads Leaflet from a CDN, then USGS The
+   National Map's topo tiles (`basemap.nationalmap.gov`) - shows roads,
+   state boundaries, and city labels prominently, with no Referer/Origin
+   policy to run into. Confirmed against this project's own basemap
+   approach in a sibling project (Poudre-Map) before picking this URL.
 
 Both modes share one `render()` function (branches on a `mapMode` variable)
 and one set of interaction handlers: a timeline slider with real calendar-day
@@ -138,10 +135,33 @@ stay lingers), play/speed controls, hover tooltips, click-a-dot-to-jump-the-
 timeline, per-year legend toggle + Select All/Clear All, and an "Itinerary"
 popup showing the same year-grouped table as the standalone itinerary page.
 
-A safety net exists regardless of tile availability: `initLeafletMap()`
-tracks tile load successes/failures, and if 3.5s in there have been 0
-successes and >=3 errors, it auto-reverts to the SVG fallback with a footer
-note explaining why, rather than leaving a map full of broken tile icons.
+**Why this isn't still pointed at `tile.openstreetmap.org`, and why the
+fallback logic looks the way it does**: the first attempt (switch the tile
+URL to OSM, rely on counting `tileerror` events to detect a blocked
+provider) looked right and even demoed fine when served over http, but
+still failed silently for `file://`. The actual mechanism turned out to be
+more specific than "OSM rejects third-party embedding" or even "OSM 403s
+`file://` pages" - inspecting the real response (`curl` with no Referer
+header, which is exactly what a `file://` page sends - browsers omit
+Referer entirely for local-scheme navigations, by spec) shows OSM's tile
+server returns **HTTP 200** with a genuine, correctly-sized 256x256 PNG
+reading "Access blocked" and an `x-blocked` response header. From Leaflet's
+point of view (and `<img>`'s onerror in general), that's a *successful* tile
+load - there's no error to count. The multi-second tileerror-counting
+safety net never had a chance to fire, because nothing ever errored.
+
+Two fixes followed from actually finding this: switching to USGS Topo
+(confirmed via the same no-Referer `curl` test to serve real tiles, not a
+block page), and adding `tileLooksBlocked()` - a one-tile `fetch()`
+pre-flight, run *before* the UI ever switches into Leaflet mode, that
+inspects the actual response status and headers rather than trusting an
+`<img>` tag's load event. This is kept general (any `x-blocked`-style
+header, not an OSM-specific check) since the failure mode - a tile host
+serving a "successful", correctly-shaped placeholder instead of a real
+error - isn't unique to OSM and could recur with a future provider. The
+original tileload/tileerror safety net stays in place too, as a second line
+of defense for a genuine runtime failure (real network error, timeout) after
+the pre-flight has already passed.
 Keep this pattern if the tile source ever changes again.
 
 **Two CSS gotchas hit and fixed while building the map, worth knowing if
