@@ -32,7 +32,7 @@ def load() -> dict:
     path = _config_path()
     data = dict(DEFAULTS)
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             saved = json.load(f)
         data.update({k: v for k, v in saved.items() if k in DEFAULTS})
     except (FileNotFoundError, json.JSONDecodeError, OSError):
@@ -47,5 +47,5 @@ def save(data: dict) -> None:
     path = _config_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     to_save = {k: data.get(k, DEFAULTS[k]) for k in DEFAULTS}
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(to_save, f, indent=1)

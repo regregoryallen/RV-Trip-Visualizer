@@ -42,7 +42,7 @@ def _project_geom(geom):
 
 
 def render(stays: list[dict], out_path: str, title: str) -> None:
-    states = json.load(open(os.path.join(ASSETS, "us-states.json")))
+    states = json.load(open(os.path.join(ASSETS, "us-states.json"), encoding="utf-8"))
     state_paths = []
     state_geojson_features = []  # unprojected (raw lon/lat) - for the Leaflet overlay
     for f in states["features"]:
@@ -56,7 +56,7 @@ def render(stays: list[dict], out_path: str, title: str) -> None:
             "geometry": mapping(simplified),
         })
 
-    mexico = json.load(open(os.path.join(ASSETS, "mexico.json")))
+    mexico = json.load(open(os.path.join(ASSETS, "mexico.json"), encoding="utf-8"))
     mgeom = shape(mexico["features"][0]["geometry"])
     mgeom = mgeom.intersection(box(-118, 22, -97, 33))  # just the northern border region
     mproj = _project_geom(mgeom.simplify(0.02, preserve_topology=True))
@@ -108,11 +108,11 @@ def render(stays: list[dict], out_path: str, title: str) -> None:
         ],
     }
 
-    shell = open(SHELL_PATH).read()
+    shell = open(SHELL_PATH, encoding="utf-8").read()
     out_html = (
         shell
         .replace("<!--TITLE-->", html.escape(title))
         .replace("/*__DATA__*/", json.dumps(data, separators=(",", ":")))
     )
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         f.write(out_html)

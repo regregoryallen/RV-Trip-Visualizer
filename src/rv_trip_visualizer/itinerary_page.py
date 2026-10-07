@@ -63,12 +63,12 @@ def render(stays: list[dict], out_path: str, title: str) -> None:
     <div class="stat"><div class="n">{longest["nights"]}</div><div class="l">Longest stay ({html.escape(longest["city"])}, {html.escape(longest["state"])})</div></div>
     '''
 
-    shell = open(SHELL_PATH).read()
+    shell = open(SHELL_PATH, encoding="utf-8").read()
     out = (
         shell
         .replace("<!--TITLE-->", html.escape(title))
         .replace("<!--STATS-->", stat_cards.strip())
         .replace("<!--YEARS-->", "\n".join(year_blocks))
     )
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         f.write(out)

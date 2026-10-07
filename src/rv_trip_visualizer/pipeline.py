@@ -58,7 +58,7 @@ def build(
         "map_html": os.path.join(out_dir, f"{base_name}-Map.html"),
     }
 
-    with open(paths_out["data_json"], "w") as f:
+    with open(paths_out["data_json"], "w", encoding="utf-8") as f:
         json.dump(stays, f, indent=1, default=str)
 
     _write_itinerary_xlsx(stays, paths_out["xlsx"])

@@ -45,7 +45,7 @@ _state_polys: list | None = None
 def _load():
     global _state_polys
     if _state_polys is None:
-        data = json.load(open(os.path.join(ASSETS, "us-states.json")))
+        data = json.load(open(os.path.join(ASSETS, "us-states.json"), encoding="utf-8"))
         _state_polys = [
             (STATE_ABBREV.get(f["properties"]["name"], f["properties"]["name"]), shape(f["geometry"]))
             for f in data["features"]
