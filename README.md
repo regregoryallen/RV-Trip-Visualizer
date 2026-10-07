@@ -93,6 +93,7 @@ src/rv_trip_visualizer/
 ├── parser.py           per-file row extraction
 ├── integrity.py         data-integrity checks (pure reporting, no fixes)
 ├── merge.py              overlap resolution + mileage folding/rescue
+├── geocode.py             offline state-from-coordinates fallback
 ├── pipeline.py            orchestrates parse -> merge -> check -> write
 ├── itinerary_page.py       itinerary HTML renderer
 ├── map_page.py             map HTML renderer (Albers projection + Leaflet)

@@ -121,19 +121,22 @@ def check(paths: list[str]) -> Report:
     report.log += overlap_log + fold_log
 
     for s in stays:
-        city, state = merge.extract_city_state(s["stop_name"], s["location"])
+        city, state = merge.resolve_city_state(s["stop_name"], s["location"], s["lat"], s["lon"])
         s["city"], s["state"] = city, state
-        if not city or not state:
-            report.add(
-                s["source_file"],
-                f"Could not resolve a City, ST from this stop's Location "
-                f"('{s['location']}') or Stop Name ('{s['stop_name']}'). Edit "
-                "the Location field in the source tool to include 'City, ST' "
-                "and re-export.",
-                row=s["row"],
-            )
         if s["lat"] is None or s["lon"] is None:
             report.add(s["source_file"], "Missing Latitude/Longitude for this stop.", row=s["row"])
+        elif not state:
+            report.add(
+                s["source_file"],
+                f"Could not determine a state for this stop: ({s['lat']}, "
+                f"{s['lon']}) doesn't fall within any US state this tool "
+                f"knows about, and neither Location ('{s['location']}') nor "
+                f"Stop Name ('{s['stop_name']}') contains a parseable "
+                "'City, ST'. If this is a real location outside the US, add "
+                "'City, ST'-style text to the Location field in the source "
+                "tool and re-export.",
+                row=s["row"],
+            )
 
     if not report.is_clean:
         return report

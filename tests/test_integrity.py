@@ -48,15 +48,33 @@ def test_check_reports_a_cross_file_gap(make_workbook):
     assert any("gap" in f.message.lower() for f in report.findings)
 
 
-def test_check_reports_unresolvable_city_state(make_workbook):
+def test_check_falls_back_to_geocoded_state_when_location_text_is_unparseable(make_workbook):
+    # "Golden Eagle RV Park" has no parseable "City, ST" anywhere in TripWizard
+    # (there's no dedicated city field) - but the coordinates are real and sit
+    # inside Texas, so this should resolve via geocoding rather than block.
     f1 = make_workbook("ambiguous.xlsx", ALL_HEADERS, [
         {"Stop Name": "Golden Eagle RV Park", "Miles": 0, "Total": 0, "Arrival Date": "6/27/19",
          "Nights": 2, "Departure Date": "6/29/19", "Location": "Golden Eagle RV Park",
          "Latitude": 30.3, "Longitude": -97.7},
     ])
     report = integrity.check([f1])
+    assert report.is_clean, report.findings
+    assert report.merged_stays[0]["state"] == "TX"
+    assert report.merged_stays[0]["city"] == "Golden Eagle RV Park"
+
+
+def test_check_reports_unresolvable_location_outside_known_states(make_workbook):
+    # Unparseable text AND coordinates that don't fall within any bundled US
+    # state boundary (here, well out in the Pacific) - genuinely nothing to
+    # derive a state from, so this should still block.
+    f1 = make_workbook("offshore.xlsx", ALL_HEADERS, [
+        {"Stop Name": "Somewhere Resort", "Miles": 0, "Total": 0, "Arrival Date": "6/27/19",
+         "Nights": 2, "Departure Date": "6/29/19", "Location": "Somewhere Resort",
+         "Latitude": 10.0, "Longitude": -160.0},
+    ])
+    report = integrity.check([f1])
     assert not report.is_clean
-    assert any("City, ST" in f.message for f in report.findings)
+    assert any("state" in f.message.lower() for f in report.findings)
 
 
 def test_check_reports_miles_total_mismatch_beyond_tolerance(make_workbook):

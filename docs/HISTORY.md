@@ -66,12 +66,41 @@ multi-month stay with no export, a COVID-era stretch, a few "we just stayed
 longer, never re-exported" cases), plus hardcoded city/state overrides for
 venues whose Location text didn't parse. Both were removed deliberately:
 `integrity.py` only ever reports problems - missing columns, unresolvable
-city/state, missing coordinates, cross-file date gaps - it never patches
-them. The fix for every finding is the same: go correct it in the source
-planning tool and re-export, then re-run the check. This keeps the tool
-honest about what's actually in the record versus what's been guessed, and
-makes the "required headers" contract (schema.py) the same for every user
-instead of accumulating one person's special cases.
+state, missing coordinates, cross-file date gaps - it never patches them.
+The fix for every finding is the same: go correct it in the source planning
+tool and re-export, then re-run the check. This keeps the tool honest about
+what's actually in the record versus what's been guessed, and makes the
+"required headers" contract (schema.py) the same for every user instead of
+accumulating one person's special cases.
+
+**The one deliberate exception - and why it isn't actually an exception:**
+TripWizard has no dedicated City/State field; `Location`/`Stop Name` are free
+text, and plenty of real entries (a bare street address, an RV park name
+with no city in it) will never parse into "City, ST" no matter what the user
+does in TripWizard - there's nothing to fix. Blocking on that would be the
+exact mistake the Miles/Total tolerance check made at first (see below):
+treating an inherent limitation of the source format as if it were a
+user-fixable error. `merge.resolve_city_state()` instead falls back to an
+offline point-in-polygon lookup (`geocode.py`) against the same US state
+boundary data `map_page.py` already bundles - a lat/lon sits inside exactly
+one state, which is a derived geometric fact, not a guess, the same
+category as the date-inference and mileage-rescue logic above. City has no
+equivalent fallback (the nearest named place to a rural RV park often isn't
+what anyone would call that stop), so it falls back to the stop's own raw
+Location/Stop Name text instead of being invented. The integrity check
+still blocks when coordinates are missing entirely, or fall outside every
+state this tool knows about (international stops - a Sonora, Mexico stop in
+the project's own real data is the one case this currently still flags,
+since only US state boundaries are bundled).
+
+**The same correction applies generally**: a check should only ever block
+when there's something the user can actually go fix. The Miles-vs-Total
+mismatch check was initially built as a blocking finding, then downgraded to
+a non-blocking `report.log` note after running it against real data showed
+it blocking on TripWizard's own ~2-mile internal rounding drift - a known,
+harmless quirk of the export format itself (see "Parsing subtleties" above),
+not a user error. If a future check idea can't be satisfied by editing the
+source data, it shouldn't be a blocking finding.
 
 ## The map's architecture
 

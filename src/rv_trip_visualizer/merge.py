@@ -10,6 +10,8 @@ from __future__ import annotations
 import re
 from datetime import date
 
+from . import geocode
+
 STATES = set(
     "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN "
     "MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA "
@@ -117,6 +119,28 @@ def extract_city_state(stop_name: str, location: str) -> tuple[str | None, str |
     if loc in STATES:
         return None, loc
     return None, None
+
+
+def resolve_city_state(
+    stop_name: str, location: str, lat: float | None, lon: float | None
+) -> tuple[str | None, str | None]:
+    """Text parsing first (gives the cleanest "City, ST"); if that can't
+    find a state, fall back to an offline point-in-polygon lookup against
+    the coordinates (geocode.state_from_point) - a lat/lon unambiguously
+    sits inside exactly one state, so this is a derived fact, not a guess,
+    same category as the date-inference and mileage-rescue logic above.
+
+    City has no equivalent geometric fallback (the nearest named place to a
+    rural RV park often isn't what anyone would call that stop), so when
+    text parsing doesn't find one, the stop's own Location/Stop Name text is
+    used as-is rather than inventing or omitting it.
+    """
+    city, state = extract_city_state(stop_name, location)
+    if not state:
+        state = geocode.state_from_point(lat, lon)
+    if not city and state:
+        city = (location or stop_name or "").strip() or None
+    return city, state
 
 
 def merge_same_location(stays: list) -> list:

@@ -27,6 +27,23 @@ def test_extract_city_state_unresolvable_returns_none():
     assert merge.extract_city_state("Golden Eagle RV Park", "Golden Eagle RV Park") == (None, None)
 
 
+def test_resolve_city_state_prefers_parsed_text():
+    city, state = merge.resolve_city_state("", "Austin, TX", 30.3, -97.7)
+    assert (city, state) == ("Austin", "TX")
+
+
+def test_resolve_city_state_falls_back_to_geocoding_when_text_is_unparseable():
+    city, state = merge.resolve_city_state(
+        "Golden Eagle RV Park", "Golden Eagle RV Park", 30.3, -97.7  # central Texas
+    )
+    assert state == "TX"
+    assert city == "Golden Eagle RV Park"  # raw text, not invented
+
+
+def test_resolve_city_state_returns_none_without_lat_lon_or_parseable_text():
+    assert merge.resolve_city_state("Mystery Spot", "Mystery Spot", None, None) == (None, None)
+
+
 def test_fold_waypoint_mileage_folds_zero_night_leg_forward():
     stops = [
         _stop(stop_name="Gas Stop", location="Waco, TX", nights=0, miles=100,
