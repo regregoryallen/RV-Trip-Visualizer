@@ -15,7 +15,7 @@ SHELL_PATH = os.path.join(HERE, "assets", "itinerary_page_shell.html")
 
 
 def _fmt_date(d: date) -> str:
-    return d.strftime("%b %-d, %Y")
+    return f"{d.strftime('%b')} {d.day}, {d.year}"
 
 
 def render(stays: list[dict], out_path: str, title: str) -> None:
