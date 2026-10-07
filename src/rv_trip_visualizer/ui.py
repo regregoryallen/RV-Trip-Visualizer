@@ -73,6 +73,21 @@ class App(tk.Tk):
         ttk.Entry(out_frame, textvariable=self.base_name_var).grid(row=1, column=1, sticky="we", padx=8, pady=4)
         out_frame.columnconfigure(1, weight=1)
 
+        # Packed with side="bottom" (and before the expanding report panel
+        # below) so this bar always keeps its space reserved at the bottom
+        # of the window - otherwise, on a short window, pack stacks widgets
+        # top-down in call order and the last one (this bar, with the Build
+        # button) can get pushed below the visible area entirely, forcing a
+        # manual resize just to find it. The report panel's expand=True
+        # fill="both" claims whatever vertical space is left instead, which
+        # is the thing that should shrink/scroll, not this bar.
+        bottom = ttk.Frame(self)
+        bottom.pack(side="bottom", fill="x", **pad)
+        self.status_var = tk.StringVar(value="")
+        ttk.Label(bottom, textvariable=self.status_var).pack(side="left")
+        self.build_button = ttk.Button(bottom, text="Build", command=self._on_build)
+        self.build_button.pack(side="right")
+
         report_frame = ttk.LabelFrame(self, text="Data check report")
         report_frame.pack(fill="both", expand=True, **pad)
         text_frame = ttk.Frame(report_frame)
@@ -85,13 +100,6 @@ class App(tk.Tk):
         self.report_text.tag_configure("error", foreground="#a8311f")
         self.report_text.tag_configure("ok", foreground="#2f5233")
         self.report_text.tag_configure("muted", foreground="#6e7267")
-
-        bottom = ttk.Frame(self)
-        bottom.pack(fill="x", **pad)
-        self.status_var = tk.StringVar(value="")
-        ttk.Label(bottom, textvariable=self.status_var).pack(side="left")
-        self.build_button = ttk.Button(bottom, text="Build", command=self._on_build)
-        self.build_button.pack(side="right")
 
     # ------------------------------------------------------------- files --
     def _add_files(self) -> None:
