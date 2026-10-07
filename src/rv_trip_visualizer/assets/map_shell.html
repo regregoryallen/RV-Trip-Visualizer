@@ -110,7 +110,13 @@
     position:absolute; pointer-events:none; background:var(--ink); color:var(--bg);
     padding:8px 11px; border-radius:8px; font-size:12.5px; line-height:1.45; box-shadow:var(--shadow);
     transform:translate(-50%,-100%); margin-top:-10px; white-space:nowrap; opacity:0; transition:opacity .1s;
-    z-index:5;
+    /* Same fix as .modal-overlay below: .stage has isolation:isolate, so
+       within that stacking context this is compared directly against
+       Leaflet's own panes (tile ~200, marker ~600, popup ~700) - z-index:5
+       lost every time Leaflet mode actually ran. That was masked for a long
+       time because Leaflet mode never successfully activated (OSM's tile
+       server always failed first) until the basemap swap to USGS Topo. */
+    z-index:1000;
   }
   .tooltip.show{ opacity:1; }
   .tooltip b{ font-family:Iowan Old Style,Palatino Linotype,Georgia,serif; font-size:13.5px; }
