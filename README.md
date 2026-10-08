@@ -29,6 +29,11 @@ Rebuilt automatically on every push to `main`; see
 [Releases](https://github.com/regregoryallen/RV-Trip-Visualizer/releases) for
 the build history.
 
+New to the app? See the **[User Guide](docs/USER_GUIDE.md)** - installing,
+the Check Data / Build workflow, what each finding in the report means and
+how to fix it, and what the output files are. The generated map and
+itinerary pages also have their own **Help** link/section built in.
+
 **There is no mechanism for correcting bad or incomplete source data from
 inside this tool.** If the integrity check finds a problem, it stops there
 and tells you what's wrong; the fix is always to correct it in the
