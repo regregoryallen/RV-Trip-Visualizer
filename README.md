@@ -11,7 +11,7 @@ Turns a set of RV-trip-planner export files into:
    real basemap showing roads, state boundaries, and city labels (with an
    offline hand-drawn fallback).
 
-It was built around [TripWizard](https://www.tripwizard.com/)'s `.xlsx`
+It was built around [TripWizard](https://tripwizard.rvlife.com/)'s `.xlsx`
 export format, but works with any export that uses the same column headers
 (see **Required columns** below) - extra columns, reordered columns, and
 extra leading rows are all tolerated.
